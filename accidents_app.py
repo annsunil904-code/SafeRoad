@@ -1,8 +1,8 @@
+%%writefile accidents_app.py
 import streamlit as st
 import pandas as pd
 import joblib
 
-# Load trained model and encoders
 model = joblib.load("accident_model.pkl")
 encoders = joblib.load("encoders.pkl")
 
@@ -19,18 +19,20 @@ st.sidebar.image(
     use_container_width=True
 )
 st.sidebar.write(
-    "Welcome to SafeRoad AI! Use the sidebar to navigate through "
-    "sections, learn why this app was built, and try out the "
-    "accident severity predictor."
-)
+        "Welcome to SafeRoad AI! Use the sidebar to navigate through "
+        "sections, learn why this app was built, and try out the "
+        "accident severity predictor."
+    )
+
 page = st.sidebar.selectbox(
     "Select a Section",
-    ["About The App", "Prediction"]
+    [ "About The App", "Prediction"]
 )
+
 st.sidebar.divider()
 st.sidebar.caption("Built as a demo project for road safety awareness.")
 
-# ---------------- ABOUT PAGE ----------------
+# ----------------  ----------------
 if page == "About The App":
     st.title("🚗 SafeRoad AI")
     st.subheader("Road Accident Severity Predictor")
@@ -40,11 +42,11 @@ if page == "About The App":
         use_container_width=True
     )
     st.write(
-        "Road accidents remain one of the leading causes of death and injury worldwide, but the outcome rarely "
-        "depends on speed or vehicle count alone. Weather, road surface, and lighting conditions all affect how well "
-        "a driver can see and control their vehicle. Road type, vehicle type, and junction details add further risk, "
-        "especially at intersections. Even the day of the week and whether the area is urban or rural can influence "
-        "accident patterns. Together, these factors show that road safety is shaped by many conditions working together, not just one."
+        "Road accidents remain one of the leading causes of death and injury worldwide, but the outcome rarely"
+        "depends on speed or vehicle count alone. Weather, road surface, and lighting conditions all affect how well"
+        "a driver can see and control their vehicle. Road type, vehicle type, and junction details add further risk,"
+        "especially at intersections. Even the day of the week and whether the area is urban or rural can influence"
+        "accident patterns. Together,these factors show that road safety is shaped by many conditions working together, not just one."
     )
     
     st.write(
@@ -66,25 +68,20 @@ elif page == "Prediction":
     )
     st.divider()
 
-    # Automatically sync features to match the exact order trained in the model
-    if hasattr(model, "feature_names_in_"):
-        FEATURES = list(model.feature_names_in_)
-    else:
-        FEATURES = [
-            "Speed_limit",
-            "Weather_Conditions",
-            "Road_Surface_Conditions",
-            "Light_Conditions",
-            "Road_Type",
-            "Vehicle_Type",
-            "Number_of_Vehicles",
-            "Number_of_Casualties",
-            "Junction_Control",
-            "Junction_Detail",
-            "Day_of_Week",
-            "Urban_or_Rural_Area"
-        ]
-
+    FEATURES = [
+        "Speed_limit",
+        "Weather_Conditions",
+        "Road_Surface_Conditions",
+        "Light_Conditions",
+        "Road_Type",
+        "Vehicle_Type",
+        "Number_of_Vehicles",
+        "Number_of_Casualties",
+        "Junction_Control",
+        "Junction_Detail",
+        "Day_of_Week",
+        "Urban_or_Rural_Area"
+    ]
     TARGET = "Accident_Severity"
     NUMERIC_FEATURES = [
         "Speed_limit",
@@ -128,21 +125,25 @@ elif page == "Prediction":
         row = {}
         for col in FEATURES:
             if col in encoders:
-                row[col] = encoders[col].transform([user_input[col]])[0]
+                row[col] = encoders[col].transform(
+                    [user_input[col]]
+                )[0]
             else:
                 row[col] = user_input[col]
 
-        # Build DataFrame and enforce exact feature alignment expected by the model
-        input_df = pd.DataFrame([row])
-        if hasattr(model, "feature_names_in_"):
-            input_df = input_df[model.feature_names_in_]
+        input_df = pd.DataFrame(
+            [row],
+            columns=FEATURES
+        )
 
         prediction = model.predict(input_df)[0]
-        prediction_label = encoders[TARGET].inverse_transform([prediction])[0]
+        prediction_label = encoders[TARGET].inverse_transform(
+            [prediction]
+        )[0]
 
-        if str(prediction_label).lower() == "fatal":
+        if prediction_label.lower() == "fatal":
             st.error("🚨 Predicted Severity: FATAL")
-        elif str(prediction_label).lower() == "serious":
+        elif prediction_label.lower() == "serious":
             st.warning("⚠️ Predicted Severity: SERIOUS")
         else:
             st.success("✅ Predicted Severity: SLIGHT")
@@ -158,14 +159,37 @@ elif page == "Prediction":
 
         for label, prob in zip(labels, probabilities):
             percentage = prob * 100
-            color = colors.get(label, "#3399FF")
-            html = f"""<div style="margin-bottom:20px;">
-                <div style="display:flex; justify-content:space-between; color:white; font-weight:bold; margin-bottom:6px;">
-                    <span>{label}</span>
-                    <span>{percentage:.2f}%</span>
-                </div>
-                <div style="background:#2E2E3A; border-radius:10px; height:18px; width:100%; overflow:hidden;">
-                    <div style="background:{color}; width:{percentage:.2f}%; height:18px; border-radius:10px;"></div>
-                </div>
-            </div>"""
+            color = colors.get(
+                label,
+                "#3399FF"
+            )
+            html = f"""
+<div style="margin-bottom:20px;">
+    <div style="
+        display:flex;
+        justify-content:space-between;
+        color:white;
+        font-weight:bold;
+        margin-bottom:6px;
+    ">
+        <span>{label}</span>
+        <span>{percentage:.2f}%</span>
+    </div>
+    <div style="
+        background:#2E2E3A;
+        border-radius:10px;
+        height:18px;
+        width:100%;
+        overflow:hidden;
+    ">
+        <div style="
+            background:{color};
+            width:{percentage:.2f}%;
+            height:18px;
+            border-radius:10px;
+        ">
+        </div>
+    </div>
+</div>
+"""
             st.html(html)
